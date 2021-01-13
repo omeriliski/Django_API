@@ -1,6 +1,7 @@
 from datetime import date
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
 from django.http import JsonResponse
+from rest_framework.serializers import Serializer
 from fscohort.models import Student
 from django.core.serializers import serialize
 import json
@@ -47,6 +48,7 @@ def student_create(request):
 def student_list_create(request):
     if request.method == "GET":
         students= Student.objects.all()
+        print("students",students)
         serializer = StudentSerializer(students,many=True)
         return Response(serializer.data)
     elif request.method == "POST":
@@ -59,4 +61,23 @@ def student_list_create(request):
             return Response(data,status=status.HTTP_201_CREATED)
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 
+@api_view(["GET","PUT","DELETE"])
+def student_get_update_delete(request,id):
+    student = get_object_or_404(Student,id=id)
+    if request.method == "GET":
+        serializer = StudentSerializer(student)
+        return Response(serializer.data)
 
+    if request.method=="PUT":
+        serializer = StudentSerializer(student,data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            data={
+                "message":"Student updated successfully"
+            }
+            return Response(data)
+        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+    
+    if request.method == "DELETE":
+        student.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
